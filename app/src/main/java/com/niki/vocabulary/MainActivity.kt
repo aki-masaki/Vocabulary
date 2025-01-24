@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,16 +24,20 @@ import androidx.room.Room
 import com.niki.vocabulary.data.AppDatabase
 import com.niki.vocabulary.ui.composables.CsvImport
 import com.niki.vocabulary.ui.composables.HomeScreen
+import com.niki.vocabulary.ui.composables.NavigationBar
 import com.niki.vocabulary.ui.theme.VocabularyTheme
 import kotlinx.coroutines.launch
 
 enum class Screen {
-    HOME, CSV_IMPORT,
+    Home, CsvImport, Search, Practice, Settings
 }
 
 sealed class NavigationItem(val route: String) {
-    data object Home : NavigationItem(Screen.HOME.name)
-    data object CsvImport : NavigationItem(Screen.CSV_IMPORT.name)
+    data object Home : NavigationItem(Screen.Home.name)
+    data object CsvImport : NavigationItem(Screen.CsvImport.name)
+    data object Search : NavigationItem(Screen.Search.name)
+    data object Practice : NavigationItem(Screen.Practice.name)
+    data object Settings : NavigationItem(Screen.Settings.name)
 }
 
 @Composable
@@ -63,7 +68,9 @@ class MainActivity : ComponentActivity() {
             Database(applicationContext, onInit = { db = it })
 
             VocabularyTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize(), bottomBar = {
+                    NavigationBar(onNavigate = { route -> navController.navigate(route) })
+                }) { innerPadding ->
                     NavHost(
                         navController = navController,
                         startDestination = NavigationItem.Home.route,
@@ -71,6 +78,15 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(NavigationItem.Home.route) {
                             HomeScreen(db, navController)
+                        }
+                        composable(NavigationItem.Search.route) {
+                            Text(text = "Search")
+                        }
+                        composable(NavigationItem.Practice.route) {
+                            Text(text = "Practice")
+                        }
+                        composable(NavigationItem.Settings.route) {
+                            Text(text = "Settings")
                         }
                         composable(NavigationItem.CsvImport.route) {
                             db?.let {

@@ -27,7 +27,6 @@ import com.niki.vocabulary.data.AppDatabase
 import com.niki.vocabulary.data.entity.Entry
 import kotlinx.coroutines.launch
 
-
 @Composable
 fun HomeScreen(database: AppDatabase?, navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
@@ -42,7 +41,7 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
 
         LaunchedEffect(Unit) {
             coroutineScope.launch {
-                count = entryDao.getCount() ?: 0
+                count = entryDao.getCount()
                 entryDao.getRandomList().let { entryList = it }
             }
         }
@@ -59,8 +58,7 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(
-                        space = 20.dp,
-                        alignment = Alignment.CenterVertically
+                        space = 20.dp, alignment = Alignment.CenterVertically
                     )
                 ) {
                     Text(text = entryList[entry].word, fontSize = 30.sp)
