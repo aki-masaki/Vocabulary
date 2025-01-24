@@ -37,7 +37,7 @@ enum class Screen {
 }
 
 sealed class NavigationItem(val route: String) {
-    data object Home : NavigationItem("${Screen.Home.name}/{entryId}")
+    data object Home : NavigationItem(Screen.Home.name)
     data object CsvImport : NavigationItem(Screen.CsvImport.name)
     data object Search : NavigationItem(Screen.Search.name)
     data object Practice : NavigationItem(Screen.Practice.name)
@@ -86,7 +86,8 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable(
-                            NavigationItem.Home.route, arguments = listOf(navArgument("entryId") {
+                            "${NavigationItem.Home.route}/{entryId}",
+                            arguments = listOf(navArgument("entryId") {
                                 type = NavType.IntType
                             })
                         ) { backStackEntry ->
@@ -111,7 +112,7 @@ class MainActivity : ComponentActivity() {
                         composable(NavigationItem.CsvImport.route) {
                             db?.let {
                                 CsvImport(db = it,
-                                    onFinish = { navController.navigate(NavigationItem.Home.route) })
+                                    onFinish = { navController.navigate("${NavigationItem.Home.route}/-1") })
                             }
                         }
                     }
