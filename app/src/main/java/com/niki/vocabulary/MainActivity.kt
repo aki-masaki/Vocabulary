@@ -5,15 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,8 +21,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.niki.vocabulary.data.AppDatabase
-import com.niki.vocabulary.data.entity.Entry
 import com.niki.vocabulary.ui.composables.CsvImport
+import com.niki.vocabulary.ui.composables.HomeScreen
 import com.niki.vocabulary.ui.theme.VocabularyTheme
 import kotlinx.coroutines.launch
 
@@ -60,7 +57,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val coroutineScope = rememberCoroutineScope()
             val navController = rememberNavController()
 
             var db by remember { mutableStateOf<AppDatabase?>(null) }
@@ -74,25 +70,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable(NavigationItem.Home.route) {
-                            var count by remember { mutableIntStateOf(-1) }
-                            var entry by remember { mutableStateOf<Entry?>(null) }
-                            val entryDao = db?.entryDao()
-
-                            LaunchedEffect(Unit) {
-                                coroutineScope.launch {
-                                    count = entryDao?.getCount() ?: 0
-                                    entry = entryDao?.getFirst()
-                                }
-                            }
-
-                            if (count == 0) navController.navigate(NavigationItem.CsvImport.route)
-
-                            entry?.let {
-                                Column {
-                                    Text(text = it.word)
-                                    Text(text = it.definition)
-                                }
-                            }
+                            HomeScreen(db, navController)
                         }
                         composable(NavigationItem.CsvImport.route) {
                             db?.let {

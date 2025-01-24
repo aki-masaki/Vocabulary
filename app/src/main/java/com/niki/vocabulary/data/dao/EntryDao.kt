@@ -13,6 +13,9 @@ interface EntryDao {
     @Query("SELECT COUNT(*) FROM Entry")
     suspend fun getCount(): Int
 
+    @Query("SELECT * FROM entry ORDER BY RANDOM() LIMIT 50")
+    suspend fun getRandomList(): List<Entry>
+
     @Insert
     suspend fun insert(vararg entry: Entry)
 }

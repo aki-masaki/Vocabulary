@@ -37,10 +37,20 @@ fun CsvImport(modifier: Modifier = Modifier, db: AppDatabase, onFinish: () -> Un
             val reader = BufferedReader(InputStreamReader(inputStream))
             var line = reader.readLine()
 
-            while (line != null) {
-                val pos = line.indexOf(",")
-                val word = line.substring(0, pos)
-                val definition = line.substring(pos + 1, line.length)
+            while (line != null && line.isNotBlank()) {
+                // Find the index of the first '"' character
+                var pos = line.indexOf("\"")
+
+                if (pos == -1) continue
+
+                // Find the index of the second '"' character
+                pos = line.indexOf("\"", startIndex = pos + 1);
+
+                if (pos == -1) continue
+
+                // Substring ignoring the '"' characters
+                val word = line.substring(1, pos)
+                val definition = line.substring(pos + 3, line.length - 1)
 
                 coroutineScope.launch {
                     db.entryDao().insert(Entry(word, definition))
