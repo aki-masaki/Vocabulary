@@ -23,7 +23,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 @Composable
-fun CsvImport(modifier: Modifier = Modifier, db: AppDatabase) {
+fun CsvImport(modifier: Modifier = Modifier, db: AppDatabase, onFinish: () -> Unit) {
     val contentResolver = LocalContext.current.contentResolver
 
     val coroutineScope = rememberCoroutineScope()
@@ -48,6 +48,8 @@ fun CsvImport(modifier: Modifier = Modifier, db: AppDatabase) {
 
                 line = reader.readLine()
             }
+
+            onFinish()
         }
 
     Column(
