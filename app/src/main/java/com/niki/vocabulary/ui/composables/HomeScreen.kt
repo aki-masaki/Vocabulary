@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,8 @@ import androidx.navigation.NavController
 import com.niki.vocabulary.NavigationItem
 import com.niki.vocabulary.data.AppDatabase
 import com.niki.vocabulary.data.entity.Entry
+import com.niki.vocabulary.data.entity.Like
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -74,6 +77,7 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
 
     database?.let { db ->
         val entryDao = db.entryDao()
+        val likeDao = db.likeDao()
 
         LaunchedEffect(Unit) {
             coroutineScope.launch {
@@ -129,6 +133,7 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
                     .size(60.dp)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
 
+                var like by remember { mutableStateOf<Like?>(null) }
 
                 IconButton(
                     onClick = {
@@ -140,24 +145,65 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
                 }
 
                 IconButton(
-                    onClick = {},
-                    modifier = buttonModifier
+                    onClick = {}, modifier = buttonModifier
                 ) {
                     Icon(Icons.Rounded.Info, contentDescription = "Info")
                 }
 
                 IconButton(
-                    onClick = {},
-                    modifier = buttonModifier
+                    onClick = {}, modifier = buttonModifier
                 ) {
                     Icon(Icons.Rounded.Bookmark, contentDescription = "Bookmark")
                 }
 
                 IconButton(
-                    onClick = {},
-                    modifier = buttonModifier
+                    onClick = {
+                        coroutineScope.launch {
+                            if (like != null) {
+                                likeDao.delete(like!!)
+
+                                like = null
+                            } else {
+                                like = Like(entryList[pagerState.currentPage].id)
+
+                                likeDao.insert(like!!)
+                            }
+                        }
+                    }, modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .border(
+                            BorderStroke(
+                                3.dp,
+                                if (like == null) MaterialTheme.colorScheme.surfaceVariant else Color(
+                                    0xFFF74636
+                                )
+                            ), shape = RoundedCornerShape(20.dp)
+                        )
+                        .size(60.dp)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
                 ) {
-                    Icon(Icons.Rounded.Favorite, contentDescription = "Like")
+                    LaunchedEffect(pagerState.currentPage) {
+                        coroutineScope.launch(Dispatchers.IO) {
+                            if (entryList.isNotEmpty()) like =
+                                likeDao.getByEntryId(entryList[pagerState.currentPage].id)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Rounded.Favorite,
+                            contentDescription = "Like",
+                            tint = if (like == null) MaterialTheme.colorScheme.onSurface else Color(
+                                0xFFF74636
+                            ),
+                            modifier = Modifier
+                                .size(if (like == null) 23.dp else 30.dp)
+                        )
+                    }
                 }
             }
         }
