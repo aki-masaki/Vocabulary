@@ -16,6 +16,12 @@ interface EntryDao {
     @Query("SELECT * FROM entry ORDER BY RANDOM() LIMIT 50")
     suspend fun getRandomList(): List<Entry>
 
+    @Query("SELECT * FROM entry WHERE word LIKE :word")
+    suspend fun getFromWord(word: String): List<Entry>
+
+    @Query("SELECT * FROM entry WHERE id = :id")
+    suspend fun getFromId(id: Int): Entry
+
     @Insert
     suspend fun insert(vararg entry: Entry)
 }

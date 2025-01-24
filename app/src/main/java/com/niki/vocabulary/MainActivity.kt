@@ -12,19 +12,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.room.Room
 import com.niki.vocabulary.data.AppDatabase
 import com.niki.vocabulary.ui.composables.CsvImport
 import com.niki.vocabulary.ui.composables.HomeScreen
 import com.niki.vocabulary.ui.composables.NavigationBar
+import com.niki.vocabulary.ui.composables.SearchScreen
 import com.niki.vocabulary.ui.theme.VocabularyTheme
 import kotlinx.coroutines.launch
 
@@ -33,7 +37,7 @@ enum class Screen {
 }
 
 sealed class NavigationItem(val route: String) {
-    data object Home : NavigationItem(Screen.Home.name)
+    data object Home : NavigationItem("${Screen.Home.name}/{entryId}")
     data object CsvImport : NavigationItem(Screen.CsvImport.name)
     data object Search : NavigationItem(Screen.Search.name)
     data object Practice : NavigationItem(Screen.Practice.name)
@@ -65,22 +69,38 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
 
             var db by remember { mutableStateOf<AppDatabase?>(null) }
+            var selectedItem by remember { mutableIntStateOf(0) }
+
             Database(applicationContext, onInit = { db = it })
 
             VocabularyTheme {
                 Scaffold(modifier = Modifier.fillMaxSize(), bottomBar = {
-                    NavigationBar(onNavigate = { route -> navController.navigate(route) })
+                    NavigationBar(onNavigate = { route, index ->
+                        navController.navigate(route)
+                        selectedItem = index
+                    }, selectedItem)
                 }) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = NavigationItem.Home.route,
+                        startDestination = NavigationItem.Search.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
-                        composable(NavigationItem.Home.route) {
-                            HomeScreen(db, navController)
+                        composable(
+                            NavigationItem.Home.route, arguments = listOf(navArgument("entryId") {
+                                type = NavType.IntType
+                            })
+                        ) { backStackEntry ->
+                            HomeScreen(
+                                db, navController, backStackEntry.arguments?.getInt("entryId") ?: -1
+                            )
                         }
                         composable(NavigationItem.Search.route) {
-                            Text(text = "Search")
+                            SearchScreen(db,
+                                onSelect = { entryId ->
+                                    navController.navigate("${Screen.Home.name}/$entryId")
+
+                                    selectedItem = 0
+                                })
                         }
                         composable(NavigationItem.Practice.route) {
                             Text(text = "Practice")

@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,7 +50,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomeScreen(database: AppDatabase?, navController: NavController) {
+fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: Int = -1) {
     val coroutineScope = rememberCoroutineScope()
 
     var count by remember { mutableIntStateOf(-1) }
@@ -82,7 +82,12 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
         LaunchedEffect(Unit) {
             coroutineScope.launch {
                 count = entryDao.getCount()
-                entryDao.getRandomList().let { entryList = it }
+                entryDao.getRandomList().let { entryList = it.toMutableStateList() }
+
+                if (entryId != -1) entryList = listOf(
+                    listOf(entryDao.getFromId(entryId)),
+                    entryList.slice(IntRange(start = 1, endInclusive = entryList.size - 1))
+                ).flatten()
             }
         }
 
@@ -147,12 +152,6 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
                 IconButton(
                     onClick = {}, modifier = buttonModifier
                 ) {
-                    Icon(Icons.Rounded.Info, contentDescription = "Info")
-                }
-
-                IconButton(
-                    onClick = {}, modifier = buttonModifier
-                ) {
                     Icon(Icons.Rounded.Bookmark, contentDescription = "Bookmark")
                 }
 
@@ -200,8 +199,7 @@ fun HomeScreen(database: AppDatabase?, navController: NavController) {
                             tint = if (like == null) MaterialTheme.colorScheme.onSurface else Color(
                                 0xFFF74636
                             ),
-                            modifier = Modifier
-                                .size(if (like == null) 23.dp else 30.dp)
+                            modifier = Modifier.size(if (like == null) 23.dp else 30.dp)
                         )
                     }
                 }

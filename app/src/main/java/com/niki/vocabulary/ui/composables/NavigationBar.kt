@@ -23,10 +23,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +38,7 @@ data class NavigationBarItem(
     fun items(): Array<NavigationBarItem> {
         return arrayOf(
             NavigationBarItem(
-                route = Screen.Home.name, label = "Home", icon = Icons.Rounded.Home
+                route = "${Screen.Home.name}/-1", label = "Home", icon = Icons.Rounded.Home
             ), NavigationBarItem(
                 route = Screen.Search.name, label = "Search", icon = Icons.Rounded.Search
             ), NavigationBarItem(
@@ -54,8 +51,7 @@ data class NavigationBarItem(
 }
 
 @Composable
-fun NavigationBar(onNavigate: (route: String) -> Unit) {
-    var selectedItem by remember { mutableIntStateOf(0) }
+fun NavigationBar(onNavigate: (route: String, index: Int) -> Unit, selectedItem: Int) {
     val interactionSource = remember { MutableInteractionSource() }
 
     Row(
@@ -85,8 +81,7 @@ fun NavigationBar(onNavigate: (route: String) -> Unit) {
                             .clickable(
                                 interactionSource = interactionSource, indication = null
                             ) {
-                                selectedItem = index
-                                onNavigate(item.route)
+                                onNavigate(item.route, index)
                             }) {
                         Icon(
                             item.icon!!,
