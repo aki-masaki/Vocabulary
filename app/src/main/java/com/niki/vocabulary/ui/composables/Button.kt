@@ -24,20 +24,22 @@ fun Button(
     onClick: () -> Unit,
     content: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    hasBorder: Boolean = true
+    hasBorder: Boolean = true,
+    primary: Boolean = false
 ) {
-    Box(modifier = modifier
+    Box(modifier = Modifier
         .width(150.dp)
         .height(50.dp)
         .clip(RoundedCornerShape(20.dp))
         .background(MaterialTheme.colorScheme.surfaceContainer)
         .border(
             if (hasBorder) BorderStroke(
-                3.dp, MaterialTheme.colorScheme.surfaceVariant
-            ) else BorderStroke(0.dp, Color.Black),
-            shape = RoundedCornerShape(20.dp)
+                3.dp,
+                if (primary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+            ) else BorderStroke(0.dp, Color.Black), shape = RoundedCornerShape(20.dp)
         )
-        .clickable { onClick() }) {
+        .clickable { onClick() }
+        .then(modifier)) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,

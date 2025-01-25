@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Favorite
@@ -44,8 +46,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.niki.vocabulary.NavigationItem
 import com.niki.vocabulary.data.AppDatabase
+import com.niki.vocabulary.data.entity.Collection
 import com.niki.vocabulary.data.entity.Entry
 import com.niki.vocabulary.data.entity.Like
+import com.niki.vocabulary.data.entity.relations.CollectionEntryCrossRef
+import com.niki.vocabulary.data.entity.relations.CollectionWithEntries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -78,9 +83,27 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
     database?.let { db ->
         val entryDao = db.entryDao()
         val likeDao = db.likeDao()
+        val collectionDao = db.collectionDao()
+
+        var like by remember { mutableStateOf<Like?>(null) }
+        var collections by remember { mutableStateOf<List<Collection>>(listOf()) }
+        var collectionsIncluding by remember { mutableStateOf<List<CollectionWithEntries>>(listOf()) }
+        var collectionsOpen by remember { mutableStateOf(false) }
+
+        LaunchedEffect(pagerState.currentPage) {
+            coroutineScope.launch(Dispatchers.IO) {
+                if (entryList.isNotEmpty()) {
+                    like = likeDao.getByEntryId(entryList[pagerState.currentPage].id)
+
+                    collections = collectionDao.getAll()
+                    collectionsIncluding =
+                        collectionDao.getByEntryId(entryList[pagerState.currentPage].id)
+                }
+            }
+        }
 
         LaunchedEffect(Unit) {
-            coroutineScope.launch {
+            coroutineScope.launch(Dispatchers.IO) {
                 count = entryDao.getCount()
                 entryDao.getRandomList().let { entryList = it.toMutableStateList() }
 
@@ -88,6 +111,14 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                     listOf(entryDao.getFromId(entryId)),
                     entryList.slice(IntRange(start = 1, endInclusive = entryList.size - 1))
                 ).flatten()
+
+                if (entryList.isNotEmpty()) {
+                    like = likeDao.getByEntryId(entryList[pagerState.currentPage].id)
+
+                    collections = collectionDao.getAll()
+                    collectionsIncluding =
+                        collectionDao.getByEntryId(entryList[pagerState.currentPage].id)
+                }
             }
         }
 
@@ -98,25 +129,81 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            VerticalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(8F),
-            ) { entry ->
+            if (collectionsOpen) {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(8F)
+                        .verticalScroll(rememberScrollState())
+                        .padding(PaddingValues(horizontal = 20.dp)),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(
-                        space = 20.dp, alignment = Alignment.CenterVertically
+                        20.dp, alignment = Alignment.CenterVertically
                     )
                 ) {
-                    Text(text = entryList[entry].word, fontSize = 30.sp)
-                    Text(
-                        text = entryList[entry].definition, modifier = Modifier.padding(
-                            PaddingValues(start = 30.dp, end = 30.dp)
-                        ), textAlign = TextAlign.Center
-                    )
+                    for (collection in collections) {
+                        val collectionIncluding =
+                            collectionsIncluding.find { it.collection.id == collection.id }
+
+                        var isIncluded by remember { mutableStateOf(collectionIncluding != null) }
+                        var crossRef by remember { mutableStateOf<CollectionEntryCrossRef?>(null) }
+
+                        Button(onClick = {
+                            coroutineScope.launch {
+                                if (isIncluded) {
+                                    collectionDao.deleteCollectionEntryCrossRef(crossRef!!)
+                                } else {
+                                    crossRef = CollectionEntryCrossRef(
+                                        entryId = entryList[pagerState.currentPage].id,
+                                        collectionId = collection.id
+                                    )
+
+                                    collectionDao.insertCollectionEntryCrossRef(crossRef!!)
+                                }
+
+                                collectionsIncluding =
+                                    collectionDao.getByEntryId(entryList[pagerState.currentPage].id)
+
+                                isIncluded = !isIncluded
+                            }
+                        }, primary = isIncluded, content = {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceAround
+                            ) {
+                                iconMap[collection.iconName]?.let {
+                                    Icon(
+                                        it, contentDescription = collection.iconName
+                                    )
+                                }
+
+                                Text(text = collection.name)
+                            }
+                        })
+                    }
+                }
+            } else {
+                VerticalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(8F),
+                ) { entry ->
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(
+                            space = 20.dp, alignment = Alignment.CenterVertically
+                        )
+                    ) {
+                        Text(text = entryList[entry].word, fontSize = 30.sp)
+                        Text(
+                            text = entryList[entry].definition, modifier = Modifier.padding(
+                                PaddingValues(start = 30.dp, end = 30.dp)
+                            ), textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
 
@@ -138,7 +225,6 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                     .size(60.dp)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
 
-                var like by remember { mutableStateOf<Like?>(null) }
 
                 IconButton(
                     onClick = {
@@ -150,7 +236,7 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                 }
 
                 IconButton(
-                    onClick = {}, modifier = buttonModifier
+                    onClick = { collectionsOpen = !collectionsOpen }, modifier = buttonModifier
                 ) {
                     Icon(Icons.Rounded.Bookmark, contentDescription = "Bookmark")
                 }
@@ -181,13 +267,6 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                         .size(60.dp)
                         .background(MaterialTheme.colorScheme.surfaceContainer)
                 ) {
-                    LaunchedEffect(pagerState.currentPage) {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            if (entryList.isNotEmpty()) like =
-                                likeDao.getByEntryId(entryList[pagerState.currentPage].id)
-                        }
-                    }
-
                     Row(
                         modifier = Modifier.fillMaxSize(),
                         verticalAlignment = Alignment.CenterVertically,

@@ -166,7 +166,7 @@ fun ColorList(onSelect: (index: Int) -> Unit, selectedIndex: Int) {
 }
 
 @Composable
-fun Preview(iconIndex: Int, colorIndex: Int, name: String) {
+fun Preview(iconIndex: Int, colorIndex: Int, name: String, db: AppDatabase) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -186,7 +186,7 @@ fun Preview(iconIndex: Int, colorIndex: Int, name: String) {
                 name = name,
                 iconName = iconMap.entries.toList()[iconIndex].key,
                 colorLong = colorList[colorIndex]
-            ), modifier = Modifier.weight(.5F)
+            ), modifier = Modifier.weight(.5F), db, preview = true
         )
 
         Spacer(
@@ -218,7 +218,7 @@ fun CreateCollectionScreen(database: AppDatabase?, navController: NavController)
 
     database?.let { db ->
         Column(modifier = Modifier.fillMaxWidth()) {
-            Preview(selectedIconIndex, selectedColorIndex, name)
+            Preview(selectedIconIndex, selectedColorIndex, name, db)
 
             Section(title = "Icon") {
                 IconList(onSelect = { selectedIconIndex = it }, selectedIndex = selectedIconIndex)

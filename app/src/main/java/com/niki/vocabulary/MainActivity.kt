@@ -86,8 +86,8 @@ class MainActivity : ComponentActivity() {
                 }) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        //startDestination = "${NavigationItem.Home.route}/-1",
-                        startDestination = NavigationItem.Practice.route,
+                        startDestination = "${NavigationItem.Home.route}/-1",
+                        //startDestination = NavigationItem.Practice.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable(

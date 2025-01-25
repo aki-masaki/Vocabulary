@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -42,7 +43,24 @@ import com.niki.vocabulary.data.entity.relations.CollectionEntryCrossRef
 import kotlinx.coroutines.launch
 
 @Composable
-fun CollectionCard(collection: Collection, modifier: Modifier = Modifier) {
+fun CollectionCard(
+    collection: Collection,
+    modifier: Modifier = Modifier,
+    db: AppDatabase,
+    preview: Boolean = false
+) {
+    var entriesCount by remember { mutableIntStateOf(0) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        if (preview) return@LaunchedEffect
+
+        coroutineScope.launch {
+            entriesCount = db.collectionDao().getById(collection.id).entries.size
+        }
+    }
+
     Box(
         modifier = modifier
             .clip(shape = RoundedCornerShape(30.dp))
@@ -72,7 +90,7 @@ fun CollectionCard(collection: Collection, modifier: Modifier = Modifier) {
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = collection.name, fontSize = 18.sp)
-                Text(text = "5 words", color = Color.Gray)
+                Text(text = "$entriesCount words", color = Color.Gray)
             }
         }
     }
@@ -129,13 +147,13 @@ fun CollectionsScreen(database: AppDatabase?, onCreateRequest: () -> Unit) {
                 collections = collectionDao.getAll()
 
                 if (collections.isEmpty() && entry != null) {
-                    val collectionId = collectionDao.insert(likedCollection)
+                    val likedCollectionId = collectionDao.insert(likedCollection)
                     collectionDao.insert(randomCollection)
                     collectionDao.insert(usefulCollection)
 
                     collectionDao.insertCollectionEntryCrossRef(
                         CollectionEntryCrossRef(
-                            entry.id, collectionId.toInt()
+                            entry.id, likedCollectionId.toInt()
                         )
                     )
                 }
@@ -150,31 +168,33 @@ fun CollectionsScreen(database: AppDatabase?, onCreateRequest: () -> Unit) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(30.dp)
         ) {
-            if (collections.isEmpty()) AddCollectionCard(modifier = Modifier.weight(.5F),
+            if (collections.isEmpty()) AddCollectionCard(
+                modifier = Modifier.weight(.5F),
                 onClick = { onCreateRequest() })
             else if (collections.size == 1) {
                 CollectionCard(
-                    collection = collections[0], modifier = Modifier.weight(.5F)
+                    collection = collections[0], modifier = Modifier.weight(.5F), db
                 )
-            } else if (collections.size % 2 == 0) {
-                collections.forEachIndexed { index, _ ->
-                    if (index == collections.size.div(2) + 1) return@Column
+            } else collections.forEachIndexed { index, _ ->
+                if (index == collections.size.div(2) + 1) return@Column
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(
-                            30.dp
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(
+                        30.dp
+                    )
+                ) {
+                    if (index < collections.size.div(2)) {
+                        CollectionCard(
+                            collection = collections[index * 2], modifier = Modifier.weight(.5F), db
                         )
-                    ) {
-                        if (index < collections.size.div(2)) {
-                            CollectionCard(
-                                collection = collections[index * 2], modifier = Modifier.weight(.5F)
-                            )
 
-                            CollectionCard(
-                                collection = collections[index * 2 + 1],
-                                modifier = Modifier.weight(.5F)
-                            )
-                        } else {
+                        CollectionCard(
+                            collection = collections[index * 2 + 1],
+                            modifier = Modifier.weight(.5F),
+                            db
+                        )
+                    } else {
+                        if (collections.size % 2 == 0) {
                             AddCollectionCard(
                                 modifier = Modifier.weight(.5F),
                                 onClick = { onCreateRequest() })
@@ -184,30 +204,11 @@ fun CollectionsScreen(database: AppDatabase?, onCreateRequest: () -> Unit) {
                                     .fillMaxWidth()
                                     .weight(0.5f)
                             )
-                        }
-                    }
-                }
-            } else {
-                collections.forEachIndexed { index, _ ->
-                    if (index == collections.size.floorDiv(2) + 1) return@Column
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(
-                            30.dp
-                        )
-                    ) {
-                        if (index < collections.size.floorDiv(2)) {
+                        } else {
                             CollectionCard(
-                                collection = collections[index * 2], modifier = Modifier.weight(.5F)
-                            )
-
-                            CollectionCard(
-                                collection = collections[index * 2 + 1],
-                                modifier = Modifier.weight(.5F)
-                            )
-                        } else if (index == collections.size.floorDiv(2)) {
-                            CollectionCard(
-                                collection = collections[index * 2], modifier = Modifier.weight(.5F)
+                                collection = collections[index * 2],
+                                modifier = Modifier.weight(.5F),
+                                db
                             )
 
                             AddCollectionCard(

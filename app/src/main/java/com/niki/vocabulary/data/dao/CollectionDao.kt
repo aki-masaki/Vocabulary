@@ -1,6 +1,7 @@
 package com.niki.vocabulary.data.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
@@ -17,9 +18,16 @@ interface CollectionDao {
     @Query("SELECT * FROM Collection WHERE id = :id")
     suspend fun getById(id: Int): CollectionWithEntries
 
+    @Transaction
+    @Query("SELECT * FROM Collection INNER JOIN CollectionEntryCrossRef ON Collection.id = CollectionEntryCrossRef.collectionId WHERE CollectionEntryCrossRef.entryId = :entryId")
+    suspend fun getByEntryId(entryId: Int): List<CollectionWithEntries>
+
     @Insert
     suspend fun insert(collection: Collection): Long
 
     @Insert
     suspend fun insertCollectionEntryCrossRef(crossRef: CollectionEntryCrossRef)
+
+    @Delete
+    suspend fun deleteCollectionEntryCrossRef(crossRef: CollectionEntryCrossRef)
 }
