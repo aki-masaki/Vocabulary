@@ -77,12 +77,13 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize(), bottomBar = {
                     NavigationBar(onNavigate = { route, index ->
                         navController.navigate(route)
+
                         selectedItem = index
                     }, selectedItem)
                 }) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = NavigationItem.Search.route,
+                        startDestination = "${NavigationItem.Home.route}/-1",
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable(
