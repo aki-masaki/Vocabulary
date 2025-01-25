@@ -26,6 +26,7 @@ import androidx.navigation.navArgument
 import androidx.room.Room
 import com.niki.vocabulary.data.AppDatabase
 import com.niki.vocabulary.ui.composables.CollectionsScreen
+import com.niki.vocabulary.ui.composables.CreateCollectionScreen
 import com.niki.vocabulary.ui.composables.CsvImport
 import com.niki.vocabulary.ui.composables.HomeScreen
 import com.niki.vocabulary.ui.composables.NavigationBar
@@ -34,7 +35,7 @@ import com.niki.vocabulary.ui.theme.VocabularyTheme
 import kotlinx.coroutines.launch
 
 enum class Screen {
-    Home, CsvImport, Search, Practice, Settings
+    Home, CsvImport, Search, Practice, Settings, CreateCollection
 }
 
 sealed class NavigationItem(val route: String) {
@@ -43,6 +44,7 @@ sealed class NavigationItem(val route: String) {
     data object Search : NavigationItem(Screen.Search.name)
     data object Practice : NavigationItem(Screen.Practice.name)
     data object Settings : NavigationItem(Screen.Settings.name)
+    data object CreateCollection : NavigationItem(Screen.CreateCollection.name)
 }
 
 @Composable
@@ -107,7 +109,9 @@ class MainActivity : ComponentActivity() {
                                 })
                         }
                         composable(NavigationItem.Practice.route) {
-                            CollectionsScreen(db)
+                            CollectionsScreen(db, onCreateRequest = {
+                                navController.navigate(NavigationItem.CreateCollection.route)
+                            })
                         }
                         composable(NavigationItem.Settings.route) {
                             Text(text = "Settings")
@@ -117,6 +121,9 @@ class MainActivity : ComponentActivity() {
                                 CsvImport(db = it,
                                     onFinish = { navController.navigate("${NavigationItem.Home.route}/-1") })
                             }
+                        }
+                        composable(NavigationItem.CreateCollection.route) {
+                            CreateCollectionScreen(db, navController)
                         }
                     }
                 }

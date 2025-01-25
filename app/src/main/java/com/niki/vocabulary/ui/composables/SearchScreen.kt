@@ -27,8 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,9 +36,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,15 +55,12 @@ fun SearchScreen(database: AppDatabase?, onSelect: (entryId: Int) -> Unit) {
     var recentSearches by remember { mutableStateOf<List<RecentSearch>>(listOf()) }
 
     var fieldEmpty by remember { mutableStateOf(true) }
-    val focusRequester = remember { FocusRequester() }
 
     database?.let { db ->
         val entryDao = db.entryDao()
         val recentSearchDao = db.recentSearchDao()
 
         LaunchedEffect(Unit) {
-            focusRequester.requestFocus()
-
             coroutineScope.launch {
                 recentSearches = recentSearchDao.getAll()
             }
@@ -79,31 +71,17 @@ fun SearchScreen(database: AppDatabase?, onSelect: (entryId: Int) -> Unit) {
                 .fillMaxSize()
                 .padding(PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp))
         ) {
-            TextField(value = searchInput,
-                onValueChange = {
-                    searchInput = it
+            Input(value = searchInput, onValueChange = {
+                searchInput = it
 
-                    if (it.isNotBlank()) {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            results = entryDao.getFromWord("$it%")
-                        }
+                if (it.isNotBlank()) {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        results = entryDao.getFromWord("$it%")
+                    }
 
-                        fieldEmpty = false
-                    } else if (it.isBlank()) fieldEmpty = true
-                },
-                shape = RoundedCornerShape(30.dp),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(30.dp))
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search") },
-                placeholder = { Text(text = "Search here") })
+                    fieldEmpty = false
+                } else if (it.isBlank()) fieldEmpty = true
+            }, autoFocus = true, icon = Icons.Rounded.Search, placeholder = "Search here")
 
             if (!fieldEmpty) Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),

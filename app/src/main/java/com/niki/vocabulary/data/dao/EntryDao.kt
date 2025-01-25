@@ -8,7 +8,7 @@ import com.niki.vocabulary.data.entity.Entry
 @Dao
 interface EntryDao {
     @Query("SELECT * FROM entry LIMIT 1")
-    suspend fun getFirst(): Entry
+    suspend fun getFirst(): Entry?
 
     @Query("SELECT COUNT(*) FROM Entry")
     suspend fun getCount(): Int
