@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.room.Room
 import com.niki.vocabulary.data.AppDatabase
+import com.niki.vocabulary.ui.composables.CollectionsScreen
 import com.niki.vocabulary.ui.composables.CsvImport
 import com.niki.vocabulary.ui.composables.HomeScreen
 import com.niki.vocabulary.ui.composables.NavigationBar
@@ -83,7 +84,8 @@ class MainActivity : ComponentActivity() {
                 }) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "${NavigationItem.Home.route}/-1",
+                        //startDestination = "${NavigationItem.Home.route}/-1",
+                        startDestination = NavigationItem.Practice.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable(
@@ -105,7 +107,7 @@ class MainActivity : ComponentActivity() {
                                 })
                         }
                         composable(NavigationItem.Practice.route) {
-                            Text(text = "Practice")
+                            CollectionsScreen(db)
                         }
                         composable(NavigationItem.Settings.route) {
                             Text(text = "Settings")
