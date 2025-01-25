@@ -47,7 +47,8 @@ fun CollectionCard(
     collection: Collection,
     modifier: Modifier = Modifier,
     db: AppDatabase,
-    preview: Boolean = false
+    preview: Boolean = false,
+    onClick: () -> Unit
 ) {
     var entriesCount by remember { mutableIntStateOf(0) }
 
@@ -71,6 +72,7 @@ fun CollectionCard(
             .width(100.dp)
             .height(200.dp)
             .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clickable { onClick() }
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -124,7 +126,11 @@ fun AddCollectionCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
 }
 
 @Composable
-fun CollectionsScreen(database: AppDatabase?, onCreateRequest: () -> Unit) {
+fun CollectionsScreen(
+    database: AppDatabase?,
+    onCreateRequest: () -> Unit,
+    onOpenRequest: (collectionId: Int) -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
 
     var collections by remember { mutableStateOf<List<Collection>>(listOf()) }
@@ -173,7 +179,11 @@ fun CollectionsScreen(database: AppDatabase?, onCreateRequest: () -> Unit) {
                 onClick = { onCreateRequest() })
             else if (collections.size == 1) {
                 CollectionCard(
-                    collection = collections[0], modifier = Modifier.weight(.5F), db
+                    collection = collections[0], modifier = Modifier.weight(.5F), db, onClick = {
+                        coroutineScope.launch {
+                            onOpenRequest(collections[0].id)
+                        }
+                    }
                 )
             } else collections.forEachIndexed { index, _ ->
                 if (index == collections.size.div(2) + 1) return@Column
@@ -185,13 +195,25 @@ fun CollectionsScreen(database: AppDatabase?, onCreateRequest: () -> Unit) {
                 ) {
                     if (index < collections.size.div(2)) {
                         CollectionCard(
-                            collection = collections[index * 2], modifier = Modifier.weight(.5F), db
+                            collection = collections[index * 2],
+                            modifier = Modifier.weight(.5F),
+                            db,
+                            onClick = {
+                                coroutineScope.launch {
+                                    onOpenRequest(collections[index * 2].id)
+                                }
+                            }
                         )
 
                         CollectionCard(
                             collection = collections[index * 2 + 1],
                             modifier = Modifier.weight(.5F),
-                            db
+                            db,
+                            onClick = {
+                                coroutineScope.launch {
+                                    onOpenRequest(collections[index * 2 + 1].id)
+                                }
+                            }
                         )
                     } else {
                         if (collections.size % 2 == 0) {
@@ -208,7 +230,12 @@ fun CollectionsScreen(database: AppDatabase?, onCreateRequest: () -> Unit) {
                             CollectionCard(
                                 collection = collections[index * 2],
                                 modifier = Modifier.weight(.5F),
-                                db
+                                db,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        onOpenRequest(collections[index * 2].id)
+                                    }
+                                }
                             )
 
                             AddCollectionCard(

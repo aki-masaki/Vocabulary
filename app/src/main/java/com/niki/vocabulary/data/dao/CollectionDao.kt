@@ -30,4 +30,15 @@ interface CollectionDao {
 
     @Delete
     suspend fun deleteCollectionEntryCrossRef(crossRef: CollectionEntryCrossRef)
+
+    @Query(
+        "SELECT * FROM CollectionEntryCrossRef WHERE entryId = :entryId AND collectionId = :collectionId"
+    )
+    suspend fun getCollectionEntryCrossRef(
+        entryId: Int,
+        collectionId: Int
+    ): CollectionEntryCrossRef?
+
+    @Query("SELECT * FROM CollectionEntryCrossRef WHERE collectionId = :id")
+    suspend fun getCrossRefByCollectionId(id: Int): List<CollectionEntryCrossRef>
 }

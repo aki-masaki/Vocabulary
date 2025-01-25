@@ -150,14 +150,15 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
 
                         Button(onClick = {
                             coroutineScope.launch {
-                                if (isIncluded) {
-                                    collectionDao.deleteCollectionEntryCrossRef(crossRef!!)
-                                } else {
+                                if (crossRef == null)
                                     crossRef = CollectionEntryCrossRef(
                                         entryId = entryList[pagerState.currentPage].id,
                                         collectionId = collection.id
                                     )
 
+                                if (isIncluded) {
+                                    collectionDao.deleteCollectionEntryCrossRef(crossRef!!)
+                                } else {
                                     collectionDao.insertCollectionEntryCrossRef(crossRef!!)
                                 }
 
@@ -236,9 +237,24 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                 }
 
                 IconButton(
-                    onClick = { collectionsOpen = !collectionsOpen }, modifier = buttonModifier
+                    onClick = { collectionsOpen = !collectionsOpen },
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .border(
+                            BorderStroke(
+                                3.dp,
+                                if (collectionsIncluding.isNotEmpty()) Color(0xFFD6D11F) else MaterialTheme.colorScheme.surfaceVariant
+                            ), shape = RoundedCornerShape(20.dp)
+                        )
+                        .size(60.dp)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
                 ) {
-                    Icon(Icons.Rounded.Bookmark, contentDescription = "Bookmark")
+                    Icon(
+                        Icons.Rounded.Bookmark,
+                        contentDescription = "Bookmark",
+                        tint = if (collectionsIncluding.isNotEmpty()) Color(0xFFD6D11F) else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(if (collectionsIncluding.isNotEmpty()) 30.dp else 23.dp)
+                    )
                 }
 
                 IconButton(

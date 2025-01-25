@@ -46,6 +46,44 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
+fun EntryCard(onClick: () -> Unit, entry: Entry, onIconClick: () -> Unit, hasIcon: Boolean = true) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(
+                PaddingValues(end = 5.dp)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1F)
+                    .padding(
+                        PaddingValues(
+                            start = 10.dp, end = 10.dp, top = 10.dp, bottom = 10.dp
+                        )
+                    ), verticalArrangement = Arrangement.Center
+            ) {
+                Text(text = entry.word)
+
+                Text(
+                    text = entry.definition, fontSize = 13.sp, color = Color.Gray
+                )
+            }
+
+            if (hasIcon) IconButton(onClick = { onIconClick() }) {
+                Icon(Icons.Rounded.Close, contentDescription = "Delete")
+            }
+        }
+    }
+}
+
+@Composable
 fun SearchScreen(database: AppDatabase?, onSelect: (entryId: Int) -> Unit) {
     var searchInput by remember { mutableStateOf("") }
 
@@ -92,35 +130,15 @@ fun SearchScreen(database: AppDatabase?, onSelect: (entryId: Int) -> Unit) {
                     .verticalScroll(rememberScrollState()),
             ) {
                 for (entry in results) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(70.dp)
-                            .clickable {
-                                onSelect(entry.id)
+                    EntryCard(onClick = {
+                        onSelect(entry.id)
 
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    if (recentSearches.find { it.entryId == entry.id } == null) recentSearchDao.insert(
-                                        RecentSearch(entry.id)
-                                    )
-                                }
-                            },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(
-                                    PaddingValues(
-                                        start = 10.dp, end = 10.dp, top = 10.dp, bottom = 10.dp
-                                    )
-                                ), verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(text = entry.word)
-
-                            Text(text = entry.definition, fontSize = 13.sp, color = Color.Gray)
+                        coroutineScope.launch(Dispatchers.IO) {
+                            if (recentSearches.find { it.entryId == entry.id } == null) recentSearchDao.insert(
+                                RecentSearch(entry.id)
+                            )
                         }
-                    }
+                    }, entry, onIconClick = {}, hasIcon = false)
                 }
             }
             else if (recentSearches.isEmpty()) Column(
@@ -154,52 +172,17 @@ fun SearchScreen(database: AppDatabase?, onSelect: (entryId: Int) -> Unit) {
                     }
 
                     entry?.let {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(70.dp)
-                                .clickable { onSelect(search.entryId) },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(
-                                    PaddingValues(end = 5.dp)
+                        EntryCard(onClick = {
+                            onSelect(search.entryId)
+                        }, entry = it, onIconClick = {
+                            coroutineScope.launch {
+                                recentSearchDao.delete(
+                                    search
                                 )
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .weight(1F)
-                                        .padding(
-                                            PaddingValues(
-                                                start = 10.dp,
-                                                end = 10.dp,
-                                                top = 10.dp,
-                                                bottom = 10.dp
-                                            )
-                                        ), verticalArrangement = Arrangement.Center
-                                ) {
-                                    Text(text = it.word)
 
-                                    Text(
-                                        text = it.definition, fontSize = 13.sp, color = Color.Gray
-                                    )
-                                }
-
-                                IconButton(onClick = {
-                                    coroutineScope.launch {
-                                        recentSearchDao.delete(
-                                            search
-                                        )
-
-                                        recentSearches = recentSearchDao.getAll()
-                                    }
-                                }) {
-                                    Icon(Icons.Rounded.Close, contentDescription = "Delete")
-                                }
+                                recentSearches = recentSearchDao.getAll()
                             }
-                        }
+                        })
                     }
                 }
 

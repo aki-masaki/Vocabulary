@@ -166,7 +166,7 @@ fun ColorList(onSelect: (index: Int) -> Unit, selectedIndex: Int) {
 }
 
 @Composable
-fun Preview(iconIndex: Int, colorIndex: Int, name: String, db: AppDatabase) {
+fun Preview(collection: Collection, db: AppDatabase, collectionExists: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -181,13 +181,11 @@ fun Preview(iconIndex: Int, colorIndex: Int, name: String, db: AppDatabase) {
                 .weight(0.25f)
         )
 
-        CollectionCard(
-            Collection(
-                name = name,
-                iconName = iconMap.entries.toList()[iconIndex].key,
-                colorLong = colorList[colorIndex]
-            ), modifier = Modifier.weight(.5F), db, preview = true
-        )
+        CollectionCard(collection,
+            modifier = Modifier.weight(.5F),
+            db,
+            preview = !collectionExists,
+            onClick = {})
 
         Spacer(
             modifier = Modifier
@@ -218,7 +216,13 @@ fun CreateCollectionScreen(database: AppDatabase?, navController: NavController)
 
     database?.let { db ->
         Column(modifier = Modifier.fillMaxWidth()) {
-            Preview(selectedIconIndex, selectedColorIndex, name, db)
+            Preview(
+                Collection(
+                    name = name,
+                    iconName = iconMap.entries.toList()[selectedIconIndex].key,
+                    colorLong = colorList[selectedColorIndex]
+                ), db
+            )
 
             Section(title = "Icon") {
                 IconList(onSelect = { selectedIconIndex = it }, selectedIndex = selectedIconIndex)

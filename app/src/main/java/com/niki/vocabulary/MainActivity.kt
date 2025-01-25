@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.room.Room
 import com.niki.vocabulary.data.AppDatabase
+import com.niki.vocabulary.ui.composables.CollectionEntriesScreen
 import com.niki.vocabulary.ui.composables.CollectionsScreen
 import com.niki.vocabulary.ui.composables.CreateCollectionScreen
 import com.niki.vocabulary.ui.composables.CsvImport
@@ -35,7 +36,7 @@ import com.niki.vocabulary.ui.theme.VocabularyTheme
 import kotlinx.coroutines.launch
 
 enum class Screen {
-    Home, CsvImport, Search, Practice, Settings, CreateCollection
+    Home, CsvImport, Search, Practice, Settings, CreateCollection, CollectionEntries
 }
 
 sealed class NavigationItem(val route: String) {
@@ -45,6 +46,7 @@ sealed class NavigationItem(val route: String) {
     data object Practice : NavigationItem(Screen.Practice.name)
     data object Settings : NavigationItem(Screen.Settings.name)
     data object CreateCollection : NavigationItem(Screen.CreateCollection.name)
+    data object CollectionEntries : NavigationItem(Screen.CollectionEntries.name)
 }
 
 @Composable
@@ -101,16 +103,17 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(NavigationItem.Search.route) {
-                            SearchScreen(db,
-                                onSelect = { entryId ->
-                                    navController.navigate("${Screen.Home.name}/$entryId")
+                            SearchScreen(db, onSelect = { entryId ->
+                                navController.navigate("${Screen.Home.name}/$entryId")
 
-                                    selectedItem = 0
-                                })
+                                selectedItem = 0
+                            })
                         }
                         composable(NavigationItem.Practice.route) {
                             CollectionsScreen(db, onCreateRequest = {
                                 navController.navigate(NavigationItem.CreateCollection.route)
+                            }, onOpenRequest = { id ->
+                                navController.navigate("${NavigationItem.CollectionEntries.route}/$id")
                             })
                         }
                         composable(NavigationItem.Settings.route) {
@@ -124,6 +127,20 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(NavigationItem.CreateCollection.route) {
                             CreateCollectionScreen(db, navController)
+                        }
+                        composable(
+                            "${NavigationItem.CollectionEntries.route}/{collectionId}",
+                            arguments = listOf(navArgument("collectionId") {
+                                type = NavType.IntType
+                            })
+                        ) { backStackEntry ->
+                            CollectionEntriesScreen(db,
+                                backStackEntry.arguments?.getInt("collectionId") ?: -1,
+                                onSelect = { id ->
+                                    navController.navigate("${NavigationItem.Home.route}/$id")
+
+                                    selectedItem = 0
+                                })
                         }
                     }
                 }
