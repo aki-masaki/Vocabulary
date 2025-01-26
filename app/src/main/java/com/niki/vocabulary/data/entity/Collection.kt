@@ -9,12 +9,15 @@ data class Collection(
     @PrimaryKey(autoGenerate = true) val id: Int,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "iconName") val iconName: String,
-    @ColumnInfo(name = "colorLong") val colorLong: Long
+    @ColumnInfo(name = "colorLong") val colorLong: Long,
+    @ColumnInfo(name = "isLikedCollection") val isLikedCollection: Boolean
 ) {
-    constructor(name: String, iconName: String, colorLong: Long) : this(
-        0,
-        name,
-        iconName,
-        colorLong
+    constructor(
+        name: String,
+        iconName: String,
+        colorLong: Long,
+        isLikedCollection: Boolean = false
+    ) : this(
+        0, name, iconName, colorLong, isLikedCollection
     )
 }

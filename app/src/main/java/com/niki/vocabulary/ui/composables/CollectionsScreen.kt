@@ -142,7 +142,12 @@ fun CollectionsScreen(
         LaunchedEffect(Unit) {
             coroutineScope.launch {
                 val likedCollection =
-                    Collection(name = "Liked", iconName = "Favorite", colorLong = 0xFF2379AF)
+                    Collection(
+                        name = "Liked",
+                        iconName = "Favorite",
+                        colorLong = 0xFF2379AF,
+                        isLikedCollection = true
+                    )
                 val randomCollection =
                     Collection(name = "Random", iconName = "Home", colorLong = 0xFFFFFF)
                 val usefulCollection =

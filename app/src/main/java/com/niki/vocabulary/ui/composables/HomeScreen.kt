@@ -48,7 +48,6 @@ import com.niki.vocabulary.NavigationItem
 import com.niki.vocabulary.data.AppDatabase
 import com.niki.vocabulary.data.entity.Collection
 import com.niki.vocabulary.data.entity.Entry
-import com.niki.vocabulary.data.entity.Like
 import com.niki.vocabulary.data.entity.relations.CollectionEntryCrossRef
 import com.niki.vocabulary.data.entity.relations.CollectionWithEntries
 import kotlinx.coroutines.Dispatchers
@@ -82,10 +81,8 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
 
     database?.let { db ->
         val entryDao = db.entryDao()
-        val likeDao = db.likeDao()
         val collectionDao = db.collectionDao()
 
-        var like by remember { mutableStateOf<Like?>(null) }
         var collections by remember { mutableStateOf<List<Collection>>(listOf()) }
         var collectionsIncluding by remember { mutableStateOf<List<CollectionWithEntries>>(listOf()) }
         var collectionsOpen by remember { mutableStateOf(false) }
@@ -93,12 +90,12 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
         LaunchedEffect(pagerState.currentPage) {
             coroutineScope.launch(Dispatchers.IO) {
                 if (entryList.isNotEmpty()) {
-                    like = likeDao.getByEntryId(entryList[pagerState.currentPage].id)
-
                     collections = collectionDao.getAll()
                     collectionsIncluding =
                         collectionDao.getByEntryId(entryList[pagerState.currentPage].id)
                 }
+
+                println(collectionsIncluding)
             }
         }
 
@@ -113,12 +110,12 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                 ).flatten()
 
                 if (entryList.isNotEmpty()) {
-                    like = likeDao.getByEntryId(entryList[pagerState.currentPage].id)
-
                     collections = collectionDao.getAll()
                     collectionsIncluding =
                         collectionDao.getByEntryId(entryList[pagerState.currentPage].id)
                 }
+
+                println(collectionsIncluding)
             }
         }
 
@@ -142,6 +139,8 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                     )
                 ) {
                     for (collection in collections) {
+                        if (collection.id == 1) continue
+
                         val collectionIncluding =
                             collectionsIncluding.find { it.collection.id == collection.id }
 
@@ -150,11 +149,10 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
 
                         Button(onClick = {
                             coroutineScope.launch {
-                                if (crossRef == null)
-                                    crossRef = CollectionEntryCrossRef(
-                                        entryId = entryList[pagerState.currentPage].id,
-                                        collectionId = collection.id
-                                    )
+                                if (crossRef == null) crossRef = CollectionEntryCrossRef(
+                                    entryId = entryList[pagerState.currentPage].id,
+                                    collectionId = collection.id
+                                )
 
                                 if (isIncluded) {
                                     collectionDao.deleteCollectionEntryCrossRef(crossRef!!)
@@ -226,6 +224,17 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                     .size(60.dp)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
 
+                var isSaved by remember { mutableStateOf(collectionsIncluding.isNotEmpty() && collectionsIncluding.find { it.collection.id == 1 } == null) }
+
+                var crossRef by remember { mutableStateOf<CollectionEntryCrossRef?>(null) }
+                var isLiked by remember { mutableStateOf(collectionsIncluding.find { it.collection.id == 1 } != null) }
+
+                LaunchedEffect(collectionsIncluding) {
+                    isLiked = collectionsIncluding.find { it.collection.id == 1 } != null
+
+                    isSaved =
+                        if (collectionsIncluding.size == 1) !isLiked else collectionsIncluding.size > 1
+                }
 
                 IconButton(
                     onClick = {
@@ -237,13 +246,20 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                 }
 
                 IconButton(
-                    onClick = { collectionsOpen = !collectionsOpen },
-                    modifier = Modifier
+                    onClick = {
+                        collectionsOpen = !collectionsOpen
+
+                        coroutineScope.launch {
+                            collectionsIncluding =
+                                collectionDao.getByEntryId(entryList[pagerState.currentPage].id)
+                        }
+                    }, modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
                         .border(
                             BorderStroke(
-                                3.dp,
-                                if (collectionsIncluding.isNotEmpty()) Color(0xFFD6D11F) else MaterialTheme.colorScheme.surfaceVariant
+                                3.dp, if (isSaved) Color(
+                                    0xFFD6D11F
+                                ) else MaterialTheme.colorScheme.surfaceVariant
                             ), shape = RoundedCornerShape(20.dp)
                         )
                         .size(60.dp)
@@ -252,32 +268,44 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                     Icon(
                         Icons.Rounded.Bookmark,
                         contentDescription = "Bookmark",
-                        tint = if (collectionsIncluding.isNotEmpty()) Color(0xFFD6D11F) else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(if (collectionsIncluding.isNotEmpty()) 30.dp else 23.dp)
+                        tint = if (isSaved) Color(
+                            0xFFD6D11F
+                        ) else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(if (isSaved) 30.dp else 23.dp)
                     )
                 }
 
                 IconButton(
                     onClick = {
                         coroutineScope.launch {
-                            if (like != null) {
-                                likeDao.delete(like!!)
+                            if (collectionsIncluding.find { it.collection.id == 1 } != null) {
+                                crossRef = collectionDao.getCollectionEntryCrossRef(
+                                    entryList[pagerState.currentPage].id, 1
+                                )
 
-                                like = null
+                                collectionDao.deleteCollectionEntryCrossRef(
+                                    crossRef!!
+                                )
                             } else {
-                                like = Like(entryList[pagerState.currentPage].id)
+                                if (crossRef == null) crossRef = CollectionEntryCrossRef(
+                                    entryId = entryList[pagerState.currentPage].id, collectionId = 1
+                                )
 
-                                likeDao.insert(like!!)
+                                collectionDao.insertCollectionEntryCrossRef(crossRef!!)
                             }
+
+                            collectionsIncluding =
+                                collectionDao.getByEntryId(entryList[pagerState.currentPage].id)
+
+                            isLiked = !isLiked
                         }
                     }, modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
                         .border(
                             BorderStroke(
-                                3.dp,
-                                if (like == null) MaterialTheme.colorScheme.surfaceVariant else Color(
+                                3.dp, if (isLiked) Color(
                                     0xFFF74636
-                                )
+                                ) else MaterialTheme.colorScheme.surfaceVariant
                             ), shape = RoundedCornerShape(20.dp)
                         )
                         .size(60.dp)
@@ -291,10 +319,10 @@ fun HomeScreen(database: AppDatabase?, navController: NavController, entryId: In
                         Icon(
                             Icons.Rounded.Favorite,
                             contentDescription = "Like",
-                            tint = if (like == null) MaterialTheme.colorScheme.onSurface else Color(
+                            tint = if (isLiked) Color(
                                 0xFFF74636
-                            ),
-                            modifier = Modifier.size(if (like == null) 23.dp else 30.dp)
+                            ) else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(if (isLiked) 30.dp else 23.dp)
                         )
                     }
                 }
